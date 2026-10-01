@@ -1,57 +1,67 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-
 public class PlayerControllerScript : MonoBehaviour
 {
+    // The variables I used.
     Platformer_Inputs _inputs;
-    [SerializeField] CharacterController cc;
-    [SerializeField] Animator _anim;
-    [SerializeField] private Transform camPosition;
+    CharacterController cc;
+    Animator anim;
+    Transform camPosition;
 
-    [Header("Movement Variables")]
+    [Header("Movement")]
     [SerializeField] Vector2 moveInput;
     [SerializeField] Vector3 moveDirection;
-    public float moveSpeed = 4;
-    public float runSpeed = 8;
-    public float turnSpeed = 0.1f;
+    public float moveSpeed;
+    public float sprintMult;
+    public bool sprint;
+    public float turnSpeed;
     private float turnSmoothVelocity;
 
-    [Header("Jumping Variables")]
-    public float jumpForce = 4;
-    public float quickJumpMultiplier = 0.5f;
-    public TMP_Text coyoteText;
-    public TMP_Text bufferText;
+    [Header("Jumping")]
+    public float jumpForce;
+    public float quickJumpMult;
+    public float groundedDelay;
+    private bool jumped;
 
-    //Coyote and buffer variables
-    public float coyoteTimer = 0.5f;
-    public float jumpBufferTime = 0.5f;
-    [SerializeField] private float coyoteTime;
-    [SerializeField] private float jumpBuffer;
-
-    [Header("Player Physics Varibles")]
-    public float gravityForce = -8;
-    [SerializeField] Vector3 playerVelocity;
+    [Header("Physics")]
+    public float gravityForce;
+    [SerializeField] Vector3 playerVelocty;
     public Transform groundCheck;
     public LayerMask groundLayer;
     [SerializeField] Collider[] groundCollider;
-
-    [Header("Animation Blending")]
-    public float moveBlend;
-
-    [Header("Boolean Variables")]
     public bool isGrounded;
 
+    [Header("Leniency")]
+    public TMP_Text coyoteDisplay;
+    public TMP_Text jumpBufferDisplay;
+    public float coyoteTimer;
+    public float jumpBufferTime;
+    [SerializeField] private float coyoteTime;
+    [SerializeField] private float jumpBuffer;
+
+    [Header("Booleans")]
+    public bool inAction;
+
+    // Initiate some variables.
     private void Awake()
     {
         _inputs = new Platformer_Inputs();
         cc = GetComponent<CharacterController>();
-        _anim = GetComponentInChildren<Animator>();
+        anim = GetComponentInChildren<Animator>();
         camPosition = Camera.main.transform;
     }
 
+    // Uses Unity's event system to toggle sprint.
+    private void Start()
+    {
+        _inputs.Player.Sprint.performed += ctx => { sprint = !sprint; };
+    }
+
+    // This function and the one below make sure that inputs function only when the player controller is actually enabled.
     private void OnEnable()
     {
         _inputs.Enable();
@@ -65,76 +75,99 @@ public class PlayerControllerScript : MonoBehaviour
     private void Update()
     {
         HandlePhysics();
-        HandleInput();
-        HandleMovement();
+        if(!inAction)
+        {
+            HandleInput();
+            HandleMovement();
+        }
 
-        //Handle jumping value
-        if (isGrounded) coyoteTime = coyoteTimer;
+        // Set animation value
+        anim.SetBool("InAction", inAction);
+
+        // If the player is near the ground and hasn't recently jumped, prepare coyoteTime.
+        // Else, reduce coyoteTime by Time.deltaTime.
+        if (isGrounded && !jumped) coyoteTime = coyoteTimer;
         else coyoteTime -= Time.deltaTime;
 
+        // jumpBuffer gets reduced by Time.deltaTime unless doing so would make it negative.
         jumpBuffer -= Time.deltaTime;
-        if(jumpBuffer < 0) jumpBuffer = 0;
+        if (jumpBuffer < 0) jumpBuffer = 0;
 
-        coyoteText.text = "Coyote Time = " + coyoteTime.ToString();
-        bufferText.text = "Jump Buffer = " + jumpBuffer.ToString();
+        // Debug text.
+        coyoteDisplay.text = "Coyote Time = " + coyoteTime.ToString();
+        jumpBufferDisplay.text = "Jump Buffer = " + jumpBuffer.ToString();
     }
 
-    void HandlePhysics()
+    private void HandlePhysics()
     {
+        // Basic isGrounded check. If the player is close enough to the ground, they are considered grounded.
+        // This is a problem for jumping and coyote time because, for a moment after jumping, the player is still considered grounded.
+        // How I handle this is explained later.
         groundCollider = Physics.OverlapSphere(groundCheck.position, 0.2f, groundLayer);
-        if (groundCollider.Length > 0)
-            isGrounded = true;
-        else
-            isGrounded = false;
+        if (groundCollider.Length > 0) isGrounded = true;
+        else isGrounded = false;
+        anim.SetBool("Grounded", isGrounded);
 
-        _anim.SetBool("Grounded", isGrounded); 
-
-        if (isGrounded && playerVelocity.y < 0)
-            playerVelocity.y = -0.5f;
-        else
-            playerVelocity.y += gravityForce * Time.deltaTime;
+        // If the player is near the ground and hasn't recently jumped, lock y velocity to -0.5.
+        // Else, add gravityForce every second (regulated by Time.deltaTime).
+        if (isGrounded && !jumped) playerVelocty.y = -0.5f;
+        else playerVelocty.y += gravityForce * Time.deltaTime;
     }
 
-    void HandleInput()
+    private void HandleInput()
     {
-        moveInput = _inputs.Player.Move.ReadValue<Vector2>();
-        if (_inputs.Player.Jump.triggered)
+        moveInput = _inputs.Player.Move.ReadValue<Vector2>(); // Read value from inputs using polling.
+        if (_inputs.Player.Jump.triggered) jumpBuffer = jumpBufferTime; // Pressing jump doesn't actually jump, just prepares the jump buffer.
+        if (coyoteTime > 0 && jumpBuffer > 0) StartCoroutine(Jump()); // If coyoteTime and jumpBuffer are both positive, then the jump is performed.
+        if (_inputs.Player.Jump.WasReleasedThisFrame() && playerVelocty.y > 0) playerVelocty.y *= quickJumpMult; // Velocity is halfed if the player lets go of jump while moving up.
+        if(_inputs.Player.Attack.triggered && !inAction)
         {
-            jumpBuffer = jumpBufferTime;
-            //coyoteTime = 0;
+            anim.SetTrigger("Attack");
+            inAction = true; // Maybe this is incorrect
         }
-
-        // Player Jump
-        if (_inputs.Player.Jump.triggered && coyoteTime > 0)
-        {
-            coyoteTime = 0;
-            jumpBuffer = 0;
-            playerVelocity.y = Mathf.Sqrt(jumpForce * -3f * gravityForce);
-            _anim.SetTrigger("Jump");
-        }
-
-        // Quick Jump
-        if(_inputs.Player.Jump.WasReleasedThisFrame() && playerVelocity.y > 0)
-            playerVelocity.y *= quickJumpMultiplier;
     }
 
-    void HandleMovement()
+    private void HandleMovement()
     {
+        // This thing should(?) be the exact same as Hendrix's project.
+        // I should explain in-line if statements very quickly, though.
+        // They follow this format: [boolean expression] ? [if true] : [if false]
+        // This decreases the amount of standard if and switch statements required to get something similar to work.
+        // Here, two in-line if statements are used to dynamically change the "Speed" float to 0, 0.5, or 1, depending on moveDirection's magnitude and the sprint bool.
         moveDirection = new Vector3(moveInput.x, 0, moveInput.y).normalized;
+        anim.SetFloat("Speed", moveDirection.magnitude != 0 ? (sprint ? 1 : 0.5f) : 0, 0.1f, Time.deltaTime);
 
-        _anim.SetFloat("Speed", moveDirection.magnitude, moveBlend, Time.deltaTime);
-        _anim.SetFloat("VSpeed", playerVelocity.y);
-        if(moveDirection.magnitude > 0.1f)
+        if (moveDirection.magnitude != 0)
         {
-            float targetAngle = Mathf.Atan2(moveDirection.x,
-                moveDirection.z) * Mathf.Rad2Deg + camPosition.eulerAngles.y;
-            float _angle = Mathf.SmoothDampAngle(transform.eulerAngles.y,
-                targetAngle, ref turnSmoothVelocity, turnSpeed);
-            transform.rotation = Quaternion.Euler(0, _angle, 0);
+            float targetAngle = MathF.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg + camPosition.eulerAngles.y;
+            float smoothAngle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSpeed);
+            transform.rotation = Quaternion.Euler(0, smoothAngle, 0);
+
             Vector3 newDirection = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
-            cc.Move(newDirection * moveSpeed * Time.deltaTime);
+            float sprintApplied = 1;
+            if (sprint) sprintApplied *= sprintMult;
+            cc.Move(newDirection * moveSpeed * sprintApplied * Time.deltaTime);
         }
 
-        cc.Move(playerVelocity * Time.deltaTime);
+        anim.SetFloat("vSpeed", playerVelocty.y);
+        cc.Move(playerVelocty * Time.deltaTime);
+    }
+
+    // The important one. This coroutine helps prevent the problems caused by the allways-running sphere collider.
+    // First, it sets jumped to true to actually let jumping function as expected.
+    // Second, it sets coyoteTime to zero, to prevent double jumping.
+    // Then it actually performs the jump. It has two in-line if statements to control the jump height.
+    // The first in-line boosts jump height if the player is sprinting. Why? Because why not?
+    // The second in-line reduces the jump height if the player was not holding the button when the jump gets performed.
+    // The second in-line thus allows for tapping the jump button right before touching the ground and still getting the expected reduced jump height.
+    // Finally, it triggers the jump animation, waits for groundedDelay seconds (I have mine set to 0.1), then sets jumped to false now that we're properly in the air.
+    IEnumerator Jump()
+    {
+        jumped = true;
+        coyoteTime = 0;
+        playerVelocty.y = Mathf.Sqrt(jumpForce * -3 * gravityForce * (sprint ? sprintMult : 1) * (_inputs.Player.Jump.IsPressed() ? 1 : quickJumpMult));
+        anim.SetTrigger("Jump");
+        yield return new WaitForSeconds(groundedDelay);
+        jumped = false;
     }
 }
