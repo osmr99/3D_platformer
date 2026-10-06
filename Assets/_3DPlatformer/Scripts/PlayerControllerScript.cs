@@ -26,6 +26,8 @@ public class PlayerControllerScript : MonoBehaviour
     public float quickJumpMult;
     public float groundedDelay;
     private bool jumped;
+    public int numberOfjumps = 2;
+    [SerializeField] private int _jumps;
 
     [Header("Physics")]
     public float gravityForce;
@@ -83,6 +85,7 @@ public class PlayerControllerScript : MonoBehaviour
 
         // Set animation value
         anim.SetBool("InAction", inAction);
+        if (isGrounded) _jumps = numberOfjumps;
 
         // If the player is near the ground and hasn't recently jumped, prepare coyoteTime.
         // Else, reduce coyoteTime by Time.deltaTime.
@@ -118,12 +121,28 @@ public class PlayerControllerScript : MonoBehaviour
     {
         moveInput = _inputs.Player.Move.ReadValue<Vector2>(); // Read value from inputs using polling.
         if (_inputs.Player.Jump.triggered) jumpBuffer = jumpBufferTime; // Pressing jump doesn't actually jump, just prepares the jump buffer.
-        if (coyoteTime > 0 && jumpBuffer > 0) StartCoroutine(Jump()); // If coyoteTime and jumpBuffer are both positive, then the jump is performed.
+        if (jumpBuffer > 0)
+        {
+            if(coyoteTime > 0)
+            {
+                jumpBuffer = 0;
+                coyoteTime = 0;
+                StartCoroutine(Jump());
+            }
+            else if (_jumps > 0)
+            {
+                playerVelocty.y = 0;
+                _jumps--;
+                jumpBuffer = 0;
+                coyoteTime = 0;
+                StartCoroutine(Jump());
+            }
+        }// If coyoteTime and jumpBuffer are both positive, then the jump is performed.
         if (_inputs.Player.Jump.WasReleasedThisFrame() && playerVelocty.y > 0) playerVelocty.y *= quickJumpMult; // Velocity is halfed if the player lets go of jump while moving up.
         if(_inputs.Player.Attack.triggered && !inAction)
         {
+            inAction = true;
             anim.SetTrigger("Attack");
-            inAction = true; // Maybe this is incorrect
         }
     }
 
@@ -164,7 +183,7 @@ public class PlayerControllerScript : MonoBehaviour
     IEnumerator Jump()
     {
         jumped = true;
-        coyoteTime = 0;
+        //coyoteTime = 0;
         playerVelocty.y = Mathf.Sqrt(jumpForce * -3 * gravityForce * (sprint ? sprintMult : 1) * (_inputs.Player.Jump.IsPressed() ? 1 : quickJumpMult));
         anim.SetTrigger("Jump");
         yield return new WaitForSeconds(groundedDelay);
