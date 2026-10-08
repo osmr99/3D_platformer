@@ -16,6 +16,17 @@ public class EnemyHealthScript : MonoBehaviour
     public GameObject deathSmokeEffect;
     public Transform impactSpawnPoint;
 
+    [Header("Set up Coin Drop System")]
+    public Rigidbody coinObject;
+    public int coinCount = 4;
+    public float spawnRadius = 0.75f;
+    public float spawnHeight = 0.5f;
+
+    // Coin Scattering and Force
+    public bool applyForce = true;
+    public float forwardForce = 3f;
+    public float upwardForce = 1f;
+
     public int enemyHealth;
     [SerializeField] Rigidbody rb;
     public float knockBackForce = 4;
@@ -72,6 +83,34 @@ public class EnemyHealthScript : MonoBehaviour
         anim.SetTrigger("Death");
         yield return new WaitForSeconds(1.5f);
         Instantiate(deathSmokeEffect, impactSpawnPoint.position, Quaternion.identity);
+        DropCoins();
         Destroy(gameObject);
+    }
+
+    void DropCoins()
+    {
+        if (coinObject == null || coinCount <= 0)
+            return;
+        float angleStep = 360 / coinCount;
+        float starAngle = Random.Range(0, 360);
+
+        for(int i = 0; i < coinCount; i++)
+        {
+            float _angle = (starAngle + angleStep * i)
+                * Mathf.Deg2Rad;
+            Vector3 _direction = new Vector3(Mathf.Cos(_angle), 
+                0f, Mathf.Sin(_angle));
+            Vector3 spawnPosition = transform.position + _direction
+                * spawnRadius + Vector3.up * spawnHeight;
+
+            Rigidbody _coin = Instantiate(coinObject, spawnPosition, Quaternion.identity);
+
+            if(applyForce)
+            {
+                Vector3 _force = (_direction + Vector3.up * upwardForce)
+                    .normalized * forwardForce;
+                _coin.AddForce(_force, ForceMode.Impulse);
+            }
+        }
     }
 }
