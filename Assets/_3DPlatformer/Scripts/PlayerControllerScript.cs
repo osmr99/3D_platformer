@@ -225,9 +225,9 @@ public class PlayerControllerScript : MonoBehaviour
 
     IEnumerator Stunned()
     {
-        yield return new WaitForSeconds(invSeconds * 0.5f);
+        yield return new WaitForSeconds(invSeconds * 0.05f);
         OnEnable();
-        yield return new WaitForSeconds(invSeconds * 0.5f);
+        yield return new WaitForSeconds(invSeconds * 0.95f);
         isHurt = false;
         
     }

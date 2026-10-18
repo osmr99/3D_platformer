@@ -40,8 +40,8 @@ public class EnemyHealthScript : MonoBehaviour
     [SerializeField] Rigidbody rb;
     public float knockBackForce = 4;
 
-    [SerializeField] private bool isHurt;
-    [SerializeField] private bool isDead;
+    [SerializeField] public bool isHurt;
+    [SerializeField] public bool isDead;
 
     PlayerControllerScript playerControllerScript;
 
@@ -50,9 +50,8 @@ public class EnemyHealthScript : MonoBehaviour
     public NavMeshAgent agent;
     public EnemyStates state = EnemyStates.PATROL;
     public Transform[] patrollingPoints;
-    public bool canPatrol = true;
-    public float currentPatrolDelay = 0;
-    public float patrolDelay;
+    public bool canPatrol = true;   
+    public float delay;
     int randomNum;
     int previousNum;
 
@@ -75,30 +74,20 @@ public class EnemyHealthScript : MonoBehaviour
                 break;
             case EnemyStates.CHASE:
                 break;
-            case EnemyStates.ATTACK:
-                break;
+            //case EnemyStates.ATTACK:
+                //break;
         }
-
-        //if(currentPatrolDelay < patrolDelay)
-        //{
-            //currentPatrolDelay += Time.deltaTime;
-        //}
-        //else if(currentPatrolDelay >= patrolDelay)
-        //{
-            //canPatrol = true;
-        //}
     }
 
     void Patrolling()
     {
-        agent.speed = 1.75f;
+        agent.speed = 1.5f;
         if(!agent.hasPath && canPatrol)
         {
             canPatrol = false;
             while (randomNum == previousNum)
                 randomNum = Random.Range(0, patrollingPoints.Length - 1);
             previousNum = randomNum;
-            Debug.Log(randomNum);
             agent.SetDestination(patrollingPoints[randomNum].position);
             anim.SetBool("Patrolling", true);
 
@@ -106,16 +95,40 @@ public class EnemyHealthScript : MonoBehaviour
         else if (agent.remainingDistance < 0.1f && anim.GetBool("Patrolling"))
         {
             anim.SetBool("Patrolling", false);
-            //currentPatrolDelay = 0;
-            StopCoroutine(PatrolDelay());
+            StopAllCoroutines();
             StartCoroutine(PatrolDelay());
         }
     }
 
     IEnumerator PatrolDelay()
     {
-        yield return new WaitForSeconds(patrolDelay);
+        yield return new WaitForSeconds(delay);
         canPatrol = true;
+    }
+
+    public void StartChasing()
+    {
+        StopAllCoroutines();
+        canPatrol = false;
+        anim.SetBool("Patrolling", false);
+        agent.speed = 3;
+        anim.SetBool("Found", true);
+        agent.SetDestination(playerControllerScript.transform.position);
+    }
+
+    public void EndChasing()
+    {
+        agent.speed = 0;
+        anim.SetBool("Found", false);
+        agent.SetDestination(transform.position);
+        StartCoroutine(ChaseDelay());
+    }
+
+    IEnumerator ChaseDelay()
+    {
+        yield return new WaitForSeconds(delay);
+        canPatrol = true;
+        state = EnemyStates.PATROL;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -134,7 +147,7 @@ public class EnemyHealthScript : MonoBehaviour
     {
         if (other.gameObject.tag == "Player")
         {
-            if (!playerControllerScript.isHurt && !isDead)
+            if (!playerControllerScript.isHurt && !isDead && !isHurt)
             {
                 playerControllerScript.UpdateHP(1);
             }

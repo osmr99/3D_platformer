@@ -765,7 +765,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0.10352379, y: 0.000000030554478, z: -0.0000000031802028, w: 0.994627}
-  m_LocalPosition: {x: 4.31, y: 2.1049407, z: -6.6760187}
+  m_LocalPosition: {x: 4.31, y: 2.1049407, z: -15.766019}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1409,6 +1409,8 @@ MonoBehaviour:
   - {fileID: 157658834}
   - {fileID: 1988271581}
   - {fileID: 308606625}
+  canPatrol: 1
+  delay: 2
 --- !u!195 &776854743
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -1671,7 +1673,7 @@ Transform:
   m_GameObject: {fileID: 778199197}
   serializedVersion: 2
   m_LocalRotation: {x: 0.10352378, y: 0.000000030554478, z: -0.0000000031802023, w: 0.994627}
-  m_LocalPosition: {x: 4.31, y: 2.1049407, z: -6.6760187}
+  m_LocalPosition: {x: 4.31, y: 2.1049407, z: -15.766019}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2397,6 +2399,8 @@ MonoBehaviour:
   agent: {fileID: 0}
   state: 0
   patrollingPoints: []
+  canPatrol: 1
+  delay: 0
 --- !u!54 &987011169
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3525,6 +3529,74 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1800403998}
   m_CullTransparentMesh: 1
+--- !u!1 &1842901614
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1842901615}
+  - component: {fileID: 1842901616}
+  - component: {fileID: 1842901617}
+  m_Layer: 0
+  m_Name: Chase Collider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1842901615
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1842901614}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 2.55, y: 0, z: 0.21264}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &1842901616
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1842901614}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 5
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1842901617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1842901614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9e6d8abd7af5064e8f9d64af564b9d7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1850285170
 GameObject:
   m_ObjectHideFlags: 0
@@ -3662,7 +3734,7 @@ Transform:
   m_GameObject: {fileID: 1859749629}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.31, y: 0, z: 0}
+  m_LocalPosition: {x: 4.31, y: 0, z: -9.09}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3734,11 +3806,11 @@ MonoBehaviour:
   coyoteTime: 0
   jumpBuffer: 0
   inAction: 0
-  maxHP: 5
-  currentHP: 5
+  maxHP: 999
+  currentHP: 999
   coinsCollected: 0
   coinsGoal: 40
-  invSeconds: 1.5
+  invSeconds: 2
   isHurt: 0
   playerHP: {fileID: 1800404000}
   coinCount: {fileID: 80184873}
@@ -4663,6 +4735,7 @@ SceneRoots:
   - {fileID: 1850285173}
   - {fileID: 987011167}
   - {fileID: 776854739}
+  - {fileID: 1842901615}
   - {fileID: 1237571483}
   - {fileID: 813925372}
   - {fileID: 825740009}
