@@ -1,6 +1,15 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Rendering;
+
+public enum EnemyStates
+{
+    PATROL,
+    CHASE,
+    ATTACK
+}
 
 public class EnemyHealthScript : MonoBehaviour
 {
@@ -34,12 +43,79 @@ public class EnemyHealthScript : MonoBehaviour
     [SerializeField] private bool isHurt;
     [SerializeField] private bool isDead;
 
+    PlayerControllerScript playerControllerScript;
+
+    // Enemy AI
+    [Header("Enemy AI")]
+    public NavMeshAgent agent;
+    public EnemyStates state = EnemyStates.PATROL;
+    public Transform[] patrollingPoints;
+    public bool canPatrol = true;
+    public float currentPatrolDelay = 0;
+    public float patrolDelay;
+    int randomNum;
+    int previousNum;
+
+
     private void Awake()
     {
         anim = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody>();
         _skin = GetComponentInChildren<SkinnedMeshRenderer>();
         _skin.material = _baseMat;
+        playerControllerScript = FindFirstObjectByType<PlayerControllerScript>();
+    }
+
+    private void FixedUpdate()
+    {
+        switch (state)
+        {
+            case EnemyStates.PATROL:
+                Patrolling();
+                break;
+            case EnemyStates.CHASE:
+                break;
+            case EnemyStates.ATTACK:
+                break;
+        }
+
+        //if(currentPatrolDelay < patrolDelay)
+        //{
+            //currentPatrolDelay += Time.deltaTime;
+        //}
+        //else if(currentPatrolDelay >= patrolDelay)
+        //{
+            //canPatrol = true;
+        //}
+    }
+
+    void Patrolling()
+    {
+        agent.speed = 1.75f;
+        if(!agent.hasPath && canPatrol)
+        {
+            canPatrol = false;
+            while (randomNum == previousNum)
+                randomNum = Random.Range(0, patrollingPoints.Length - 1);
+            previousNum = randomNum;
+            Debug.Log(randomNum);
+            agent.SetDestination(patrollingPoints[randomNum].position);
+            anim.SetBool("Patrolling", true);
+
+        }
+        else if (agent.remainingDistance < 0.1f && anim.GetBool("Patrolling"))
+        {
+            anim.SetBool("Patrolling", false);
+            //currentPatrolDelay = 0;
+            StopCoroutine(PatrolDelay());
+            StartCoroutine(PatrolDelay());
+        }
+    }
+
+    IEnumerator PatrolDelay()
+    {
+        yield return new WaitForSeconds(patrolDelay);
+        canPatrol = true;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -51,6 +127,17 @@ public class EnemyHealthScript : MonoBehaviour
             Vector3 lookPosition = new Vector3(_player.position.x, transform.position.y, _player.position.z);
             transform.LookAt(lookPosition);
             StartCoroutine(TakeDamage());
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (other.gameObject.tag == "Player")
+        {
+            if (!playerControllerScript.isHurt && !isDead)
+            {
+                playerControllerScript.UpdateHP(1);
+            }
         }
     }
 

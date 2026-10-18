@@ -48,6 +48,16 @@ public class PlayerControllerScript : MonoBehaviour
     [Header("Booleans")]
     public bool inAction;
 
+    [Header("Stats")]
+    public int maxHP;
+    public int currentHP;
+    public int coinsCollected;
+    public int coinsGoal;
+    public float invSeconds;
+    public bool isHurt = false;
+    public TMP_Text playerHP;
+    public TMP_Text coinCount;
+
     // Initiate some variables.
     private void Awake()
     {
@@ -60,6 +70,10 @@ public class PlayerControllerScript : MonoBehaviour
     // Uses Unity's event system to toggle sprint.
     private void Start()
     {
+        playerHP.text = "HP: " + currentHP.ToString() + "/" + maxHP.ToString();
+        playerHP.color = Color.green;
+        coinCount.text = "Coins: " + coinsCollected.ToString() + "/" + coinsGoal.ToString();
+        coinCount.color = Color.yellow;
         _inputs.Player.Sprint.performed += ctx => { sprint = !sprint; };
     }
 
@@ -188,5 +202,39 @@ public class PlayerControllerScript : MonoBehaviour
         anim.SetTrigger("Jump");
         yield return new WaitForSeconds(groundedDelay);
         jumped = false;
+    }
+
+    public void UpdateHP(int damage)
+    {
+        isHurt = true;
+        currentHP -= damage;
+        playerHP.text = "HP: " + currentHP.ToString() + "/" + maxHP.ToString();
+        if (currentHP > 0)
+        {
+            anim.SetTrigger("Hurt");
+            OnDisable();
+            StartCoroutine(Stunned());
+        }
+        else
+        {
+            MusicManager.Instance.StopMusic();
+            anim.SetTrigger("Dead");
+            OnDisable();
+        }
+    }
+
+    IEnumerator Stunned()
+    {
+        yield return new WaitForSeconds(invSeconds * 0.5f);
+        OnEnable();
+        yield return new WaitForSeconds(invSeconds * 0.5f);
+        isHurt = false;
+        
+    }
+
+    public void UpdateCoins()
+    {
+        coinsCollected++;
+        coinCount.text = "Coins: " + coinsCollected.ToString() + "/" + coinsGoal.ToString();
     }
 }
