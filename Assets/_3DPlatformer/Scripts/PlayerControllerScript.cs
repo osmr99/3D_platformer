@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 using TMPro;
 
 public class PlayerControllerScript : MonoBehaviour
@@ -58,6 +60,13 @@ public class PlayerControllerScript : MonoBehaviour
     public TMP_Text playerHP;
     public TMP_Text coinCount;
     AnimationEventScript animEvent;
+    public AudioSource sounds;
+    [SerializeField] AudioClip sfx;
+    [SerializeField] public AudioClip victorySfx;
+    VictoryScript victoryScript;
+    [SerializeField] GameObject pausingStuff;
+    [SerializeField] GameObject goalText;
+    [SerializeField] GameObject goalTrigger;
 
     // Initiate some variables.
     private void Awake()
@@ -67,6 +76,8 @@ public class PlayerControllerScript : MonoBehaviour
         anim = GetComponentInChildren<Animator>();
         camPosition = Camera.main.transform;
         animEvent = FindFirstObjectByType<AnimationEventScript>();
+        sounds = GetComponent<AudioSource>();
+        victoryScript = FindFirstObjectByType<VictoryScript>();
     }
 
     // Uses Unity's event system to toggle sprint.
@@ -92,6 +103,23 @@ public class PlayerControllerScript : MonoBehaviour
 
     private void Update()
     {
+        if (coinsCollected != coinsGoal && (Keyboard.current.pKey.wasPressedThisFrame || Keyboard.current.escapeKey.wasPressedThisFrame || Keyboard.current.tabKey.wasPressedThisFrame))
+        {
+            if(!pausingStuff.activeInHierarchy)
+            {
+                pausingStuff.SetActive(true);
+                MusicManager.Instance.PauseMusic();
+                Time.timeScale = 0;
+            }
+            else
+            {
+                pausingStuff.SetActive(false);
+                MusicManager.Instance.UnPauseMusic();
+                Time.timeScale = 1.0f;
+            }
+        }
+
+
         HandlePhysics();
         if(!inAction)
         {
@@ -157,6 +185,7 @@ public class PlayerControllerScript : MonoBehaviour
         if (_inputs.Player.Jump.WasReleasedThisFrame() && playerVelocty.y > 0) playerVelocty.y *= quickJumpMult; // Velocity is halfed if the player lets go of jump while moving up.
         if(_inputs.Player.Attack.triggered && !inAction && !isHurt)
         {
+            sounds.PlayOneShot(sfx);
             inAction = true;
             anim.SetTrigger("Attack");
         }
@@ -208,7 +237,7 @@ public class PlayerControllerScript : MonoBehaviour
 
     public void UpdateHP(int damage)
     {
-        animEvent.TurnItOff();
+        //animEvent.TurnItOff();
         inAction = false;
         isHurt = true;
         currentHP -= damage;
@@ -223,6 +252,7 @@ public class PlayerControllerScript : MonoBehaviour
             MusicManager.Instance.StopMusic();
             anim.SetTrigger("Dead");
             OnDisable();
+            StartCoroutine(GameOver());
         }
     }
 
@@ -238,5 +268,21 @@ public class PlayerControllerScript : MonoBehaviour
     {
         coinsCollected++;
         coinCount.text = "Coins: " + coinsCollected.ToString() + "/" + coinsGoal.ToString();
+        if(coinsCollected == coinsGoal)
+        {
+            goalText.SetActive(true);
+            goalTrigger.SetActive(true);
+        }
+    }
+
+    IEnumerator GameOver()
+    {
+        yield return new WaitForSeconds(2.5f);
+        SceneManager.LoadScene("GameOver");
+    }
+
+    public void DisableInputs()
+    {
+        OnDisable();
     }
 }

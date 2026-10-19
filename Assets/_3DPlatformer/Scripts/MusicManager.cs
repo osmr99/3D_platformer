@@ -44,6 +44,16 @@ public class MusicManager : MonoBehaviour
         }
     }
 
+    public void PauseMusic()
+    {
+        musicSource.Pause();
+    }
+
+    public void UnPauseMusic()
+    {
+        musicSource.UnPause();
+    }
+
     public void StopMusic()
     {
         StartCoroutine(StopMusicCrossFade(0.5f));

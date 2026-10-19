@@ -59,6 +59,9 @@ public class EnemyHealthScript : MonoBehaviour
     [SerializeField] float val1;
     [SerializeField] float val2;
 
+    AudioSource sounds;
+    [SerializeField] AudioClip hurtSfx;
+
 
     private void Awake()
     {
@@ -67,6 +70,8 @@ public class EnemyHealthScript : MonoBehaviour
         _skin = GetComponentInChildren<SkinnedMeshRenderer>();
         _skin.material = _baseMat;
         playerControllerScript = FindFirstObjectByType<PlayerControllerScript>();
+        sounds = GetComponent<AudioSource>();
+        sounds.volume = 0.04f;
     }
 
     private void FixedUpdate()
@@ -108,6 +113,7 @@ public class EnemyHealthScript : MonoBehaviour
 
     IEnumerator PatrolDelay()
     {
+        agent.speed = 0;
         yield return new WaitForSeconds(delay);
         canPatrol = true;
     }
@@ -148,7 +154,6 @@ public class EnemyHealthScript : MonoBehaviour
 
     IEnumerator PerformAttack()
     {
-        Debug.Log("Hi");
         anim.SetBool("Found", false);
         anim.SetBool("InRange", true);
         yield return new WaitForSeconds(val1);
@@ -183,6 +188,7 @@ public class EnemyHealthScript : MonoBehaviour
     {
         enemyHealth--;
         anim.SetTrigger("Hurt");
+        sounds.PlayOneShot(hurtSfx);
         Instantiate(impactEffect, impactSpawnPoint.position, Quaternion.identity);
         yield return new WaitForSeconds(0.025f);
         HitStopManager.Instance.DoHitStop(0.15f, 0);

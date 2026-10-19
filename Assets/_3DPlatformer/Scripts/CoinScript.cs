@@ -10,11 +10,16 @@ public class CoinScript : MonoBehaviour
     public bool isCollected = false;
     public bool canCollect = false;
 
+    AudioSource sounds;
+    [SerializeField] AudioClip sfx;
+
     private void Awake()
     {
+        sounds = GetComponent<AudioSource>();
         Invoke("CollectCoin", 0.75f);
         rb = GetComponent<Rigidbody>();
         playerControllerScript = FindFirstObjectByType<PlayerControllerScript>();
+        sounds.volume = 0.04f;
     }
 
     private void Update()
@@ -25,6 +30,7 @@ public class CoinScript : MonoBehaviour
     {
         if(other.gameObject.tag == "Player" && canCollect)
         {
+            sounds.PlayOneShot(sfx);
             playerControllerScript.UpdateCoins();
             isCollected = true;
             rb.AddForce(Vector3.up * upwardForce, ForceMode.Impulse);
