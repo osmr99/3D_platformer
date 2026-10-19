@@ -30,5 +30,10 @@ public class AnimationEventScript : MonoBehaviour
     public void ToggleSphere()
     {
         sphereToggle = !sphereToggle;
-    }    
+    }
+
+    public void TurnItOff()
+    {
+        sphereToggle = false;
+    }
 }

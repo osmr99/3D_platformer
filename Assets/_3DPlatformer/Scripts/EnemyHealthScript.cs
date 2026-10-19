@@ -13,7 +13,7 @@ public enum EnemyStates
 
 public class EnemyHealthScript : MonoBehaviour
 {
-    Animator anim;
+    public Animator anim;
 
     [Header("Set up Materials")]
     [SerializeField] private SkinnedMeshRenderer _skin;
@@ -54,6 +54,10 @@ public class EnemyHealthScript : MonoBehaviour
     public float delay;
     int randomNum;
     int previousNum;
+    [SerializeField] GameObject hit;
+
+    [SerializeField] float val1;
+    [SerializeField] float val2;
 
 
     private void Awake()
@@ -73,14 +77,16 @@ public class EnemyHealthScript : MonoBehaviour
                 Patrolling();
                 break;
             case EnemyStates.CHASE:
+                StartChasing();
                 break;
-            //case EnemyStates.ATTACK:
-                //break;
+            case EnemyStates.ATTACK:
+                break;
         }
     }
 
     void Patrolling()
     {
+        anim.SetBool("Found", false);
         agent.speed = 1.5f;
         if(!agent.hasPath && canPatrol)
         {
@@ -108,7 +114,6 @@ public class EnemyHealthScript : MonoBehaviour
 
     public void StartChasing()
     {
-        StopAllCoroutines();
         canPatrol = false;
         anim.SetBool("Patrolling", false);
         agent.speed = 3;
@@ -131,6 +136,29 @@ public class EnemyHealthScript : MonoBehaviour
         state = EnemyStates.PATROL;
     }
 
+    public void Attack()
+    {
+        hit.SetActive(false);
+        StopAllCoroutines();
+        agent.speed = 0;
+        agent.SetDestination(playerControllerScript.transform.position);
+        StartCoroutine(PerformAttack());
+
+    }
+
+    IEnumerator PerformAttack()
+    {
+        Debug.Log("Hi");
+        anim.SetBool("Found", false);
+        anim.SetBool("InRange", true);
+        yield return new WaitForSeconds(val1);
+        hit.SetActive(true);
+        yield return new WaitForSeconds(val2);
+        hit.SetActive(false);
+        StartCoroutine(PerformAttack());
+
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.tag == "HitSphere" && !isHurt && !isDead)
@@ -141,10 +169,7 @@ public class EnemyHealthScript : MonoBehaviour
             transform.LookAt(lookPosition);
             StartCoroutine(TakeDamage());
         }
-    }
 
-    private void OnTriggerStay(Collider other)
-    {
         if (other.gameObject.tag == "Player")
         {
             if (!playerControllerScript.isHurt && !isDead && !isHurt)

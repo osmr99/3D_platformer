@@ -2,12 +2,7 @@ using UnityEngine;
 
 public class ChaseCollider : MonoBehaviour
 {
-    EnemyHealthScript enemy;
-
-    private void Awake()
-    {
-        enemy = FindFirstObjectByType<EnemyHealthScript>();
-    }
+    [SerializeField] EnemyHealthScript enemy;
 
     private void Update()
     {
@@ -18,12 +13,11 @@ public class ChaseCollider : MonoBehaviour
             transform.position = enemy.transform.position;
         }
     }
-    private void OnTriggerStay(Collider other)
+    private void OnTriggerEnter(Collider other)
     {
-        if(other.gameObject.tag == "Player" && !enemy.isHurt && !enemy.isDead)
+        if (other.gameObject.tag == "Player" && !enemy.isHurt && !enemy.isDead)
         {
             enemy.state = EnemyStates.CHASE;
-            enemy.StartChasing();
         }
     }
 

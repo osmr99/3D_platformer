@@ -57,6 +57,7 @@ public class PlayerControllerScript : MonoBehaviour
     public bool isHurt = false;
     public TMP_Text playerHP;
     public TMP_Text coinCount;
+    AnimationEventScript animEvent;
 
     // Initiate some variables.
     private void Awake()
@@ -65,6 +66,7 @@ public class PlayerControllerScript : MonoBehaviour
         cc = GetComponent<CharacterController>();
         anim = GetComponentInChildren<Animator>();
         camPosition = Camera.main.transform;
+        animEvent = FindFirstObjectByType<AnimationEventScript>();
     }
 
     // Uses Unity's event system to toggle sprint.
@@ -153,7 +155,7 @@ public class PlayerControllerScript : MonoBehaviour
             }
         }// If coyoteTime and jumpBuffer are both positive, then the jump is performed.
         if (_inputs.Player.Jump.WasReleasedThisFrame() && playerVelocty.y > 0) playerVelocty.y *= quickJumpMult; // Velocity is halfed if the player lets go of jump while moving up.
-        if(_inputs.Player.Attack.triggered && !inAction)
+        if(_inputs.Player.Attack.triggered && !inAction && !isHurt)
         {
             inAction = true;
             anim.SetTrigger("Attack");
@@ -206,14 +208,15 @@ public class PlayerControllerScript : MonoBehaviour
 
     public void UpdateHP(int damage)
     {
+        animEvent.TurnItOff();
+        inAction = false;
         isHurt = true;
         currentHP -= damage;
         playerHP.text = "HP: " + currentHP.ToString() + "/" + maxHP.ToString();
         if (currentHP > 0)
         {
             anim.SetTrigger("Hurt");
-            OnDisable();
-            StartCoroutine(Stunned());
+            StartCoroutine(NotStunned());
         }
         else
         {
@@ -223,11 +226,10 @@ public class PlayerControllerScript : MonoBehaviour
         }
     }
 
-    IEnumerator Stunned()
+    IEnumerator NotStunned()
     {
-        yield return new WaitForSeconds(invSeconds * 0.05f);
-        OnEnable();
-        yield return new WaitForSeconds(invSeconds * 0.95f);
+        
+        yield return new WaitForSeconds(invSeconds);
         isHurt = false;
         
     }

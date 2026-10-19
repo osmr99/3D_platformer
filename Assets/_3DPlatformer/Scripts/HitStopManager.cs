@@ -11,6 +11,12 @@ public class HitStopManager : MonoBehaviour
     [SerializeField] private float pendingStopDuration;
     [SerializeField] private bool isFrozen;
 
+    private void Awake()
+    {
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
+    }
+
     private void Start()
     {
         if(Instance == null)
